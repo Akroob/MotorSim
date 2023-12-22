@@ -7,7 +7,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import * as dat from "dat.gui";
 import jsonData from "./jsonData.js";
 
-    /*
+/*
 =========================================
 1: Model loading
 =========================================
@@ -46,7 +46,7 @@ async function main() {
     await loadModelAsync();
     //console.log("Model loaded successfully:", motorModel);
 
-        /*
+    /*
 =========================================
 2: General setup
 =========================================
@@ -642,6 +642,7 @@ async function main() {
       estimatedFrequency: 0.3, // Starting frequency estimation
       showSingle: false, // Magnetic field
       showCumulative: false, // Magnetic field
+      amperage: 100, // Particle amount
     };
 
     // Add configurable parameters
@@ -711,6 +712,26 @@ async function main() {
       // Apply the new color to your spriteMaterial
       spriteMaterial.color.set(commonCurrentParam.color);
     });
+
+    // Amperage, density, amount of particles
+    const amperageSlider = generalFolder
+      .add(config, "amperage", 1, 200)
+      .name("Density");
+    // Function to update particles when Amperage changes
+    function updateParticlesAmperage() {
+      pathL1param.particlesPerSegment = config.amperage;
+      pathL2param.particlesPerSegment = config.amperage;
+      pathL3param.particlesPerSegment = config.amperage;
+
+      // Recreate particles for each path
+      createParticles(pathL1particles, pathL1, pathL1param);
+      createParticles(pathL2particles, pathL2, pathL2param);
+      createParticles(pathL3particles, pathL3, pathL3param);
+    }
+    // Listen for changes in the Amperage slider and update particles accordingly
+    amperageSlider.onChange(updateParticlesAmperage);
+    // Initialize particles with default Amperage value
+    updateParticlesAmperage();
 
     // Hide particles
     const L1VisibilityController = generalFolder

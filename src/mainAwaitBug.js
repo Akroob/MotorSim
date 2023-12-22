@@ -72,7 +72,7 @@ const directionalLightHelper = new THREE.DirectionalLightHelper(
 */
 
 // Declare a variable to store the loaded model
-let motorModel; 
+let motorModel;
 
 // Load the motor model from public
 // Use the THREE.Cache to load the model synchronously
@@ -98,8 +98,7 @@ async function loadModelAsync() {
       }
     );
   });
-};
-
+}
 
 // Wait for model loading to be finished, then proceed with code
 try {
@@ -109,8 +108,7 @@ try {
 } catch (error) {
   // Handle errors that occurred during loading
   console.error("Error loading the model:", error);
-};
-
+}
 
 /*
 =========================================
@@ -144,6 +142,7 @@ const spriteScale = 0.1;
 // Function to create sprites
 const createSprite = (material, position) => {
   const sprite = new THREE.Sprite(material.clone());
+  sprite.renderOrder = 1;
   sprite.position.set(...position);
   return sprite;
 };
@@ -152,16 +151,71 @@ const createSprite = (material, position) => {
 // Each sprite must be assigned its own texture and color
 // Create an instance of each sprite with its own material properties
 // If that is not done, the sprites do not work correctly
-const sprites = [
-  createSprite(createMaterial(textureSouth, "#e74c3c"), [0, 0.22, 0.3]),
-  createSprite(createMaterial(textureNorth, "#3498db"), [0, -0.22, 0.3]),
+const createSpriteArray = (texture, color, positions) =>
+  positions.map((position) =>
+    createSprite(createMaterial(texture, color), position)
+  );
 
-  createSprite(createMaterial(textureSouth, "#e74c3c"), [0.2, 0.12, 0.3]),
-  createSprite(createMaterial(textureNorth, "#3498db"), [-0.2, -0.12, 0.3]),
-
-  createSprite(createMaterial(textureSouth, "#e74c3c"), [0.2, -0.12, 0.3]),
-  createSprite(createMaterial(textureNorth, "#3498db"), [-0.2, 0.12, 0.3]),
+const spriteData = [
+  {
+    texture: textureSouth,
+    color: "#e74c3c",
+    positions: [
+      [0, 0.22, 0.3],
+      [0, 0.22, 0.1],
+      [0, 0.22, -0.1],
+    ],
+  },
+  {
+    texture: textureNorth,
+    color: "#3498db",
+    positions: [
+      [0, -0.22, 0.3],
+      [0, -0.22, 0.1],
+      [0, -0.22, -0.1],
+    ],
+  },
+  {
+    texture: textureSouth,
+    color: "#e74c3c",
+    positions: [
+      [0.2, 0.12, 0.3],
+      [0.2, 0.12, 0.1],
+      [0.2, 0.12, -0.1],
+    ],
+  },
+  {
+    texture: textureNorth,
+    color: "#3498db",
+    positions: [
+      [-0.2, -0.12, 0.3],
+      [-0.2, -0.12, 0.1],
+      [-0.2, -0.12, -0.1],
+    ],
+  },
+  {
+    texture: textureSouth,
+    color: "#e74c3c",
+    positions: [
+      [0.2, -0.12, 0.3],
+      [0.2, -0.12, 0.1],
+      [0.2, -0.12, -0.1],
+    ],
+  },
+  {
+    texture: textureNorth,
+    color: "#3498db",
+    positions: [
+      [-0.2, 0.12, 0.3],
+      [-0.2, 0.12, 0.1],
+      [-0.2, 0.12, -0.1],
+    ],
+  },
 ];
+
+const sprites = spriteData.flatMap(({ texture, color, positions }) =>
+  createSpriteArray(texture, color, positions)
+);
 
 sprites.forEach((sprite) => {
   scene.add(sprite);
@@ -201,6 +255,13 @@ function animateAlternatingSprites(sprite, initialScale, phaseShift, time) {
         ? new THREE.Color("#e74c3c") // South color (red)
         : new THREE.Color("#3498db"); // North color (blue)
     sprite.userData.textureChanged = false;
+  }
+}
+
+const animateSprites = (param, phase, index) => {
+  const offset = index * 6;
+  for (let i = 0; i < 6; i++) {
+    animateAlternatingSprites(sprites[offset + i], spriteScale, phase, t);
   }
 };
 
@@ -386,7 +447,7 @@ function createParticles(curveParticles, curve, param) {
     sprite.renderOrder = 1;
 
     let scale;
-    
+
     // If future addition contains schematics, scale down the particles with this
     if (param.hasOwnProperty("schemScale")) {
       // Use schematics scale for curves that have schemScale property
@@ -411,7 +472,7 @@ function createParticles(curveParticles, curve, param) {
       console.error("pointOnPath is null for sprite at index", i);
     }
   }
-};
+}
 
 const curves = [
   { particles: pathL1particles, curve: pathL1, param: pathL1param },
@@ -422,7 +483,6 @@ const curves = [
 curves.forEach(({ particles, curve, param }) => {
   createParticles(particles, curve, param);
 });
-
 
 const phaseL1 = pathL1param.phaseL1;
 const phaseL2 = pathL2param.phaseL2;
@@ -511,7 +571,7 @@ for (const name of bearingBallsFrontNames) {
   if (bearingBallsFront[name]) {
     bearingBallsFront[name].parent = bearingBallsFrontParent; // Parent to middle model
   }
-};
+}
 
 const bearingBallsBackNames = [
   "bearingBallsBack",
@@ -537,7 +597,7 @@ for (const name of bearingBallsBackNames) {
   if (bearingBallsBack[name]) {
     bearingBallsBack[name].parent = bearingBallsBackParent; // Parent to middle model
   }
-};
+}
 
 // Rotational functions
 // Animate bearing rotations
@@ -545,7 +605,7 @@ function rotateComponent(component, rotationAngle) {
   if (component) {
     component.rotation.set(0, 0, rotationAngle);
   }
-};
+}
 
 function rotateBearingBalls(bearingBalls, rotationAngle) {
   for (const name in bearingBalls) {
@@ -554,14 +614,14 @@ function rotateBearingBalls(bearingBalls, rotationAngle) {
       bearingBall.rotation.set(0, 0, rotationAngle);
     }
   }
-};
+}
 
 // Children for hiding
 // Cover for the connection box
 const housingCover = modelChildren["housingCover"];
 if (housingCover) {
   housingCover.visible = false; // Hide housingCover
-};
+}
 
 // Children for opacity/hiding (fan and rotor squirrelcage already defined)
 const corpusMid = modelChildren["corpusMid"];
@@ -573,7 +633,7 @@ const bearingFront = modelChildren["bearingFront"];
 const bearingBack = modelChildren["bearingBack"];
 
 // Starting default opacity values for dat gui
-// Adjust whatever you think should be using opacity 
+// Adjust whatever you think should be using opacity
 // Define default opacity values
 const defaultOpacities = {
   //corpusMid: 0.5,
@@ -607,7 +667,6 @@ const displayNames = {
   fan: "Fan",
   stator: "Stator",
   rotorShaft: "Shaft",
-
 };
 
 // Set default opacity values
@@ -629,7 +688,7 @@ for (const modelName in defaultOpacities) {
       model.material.opacity = defaultOpacities[modelName];
     }
   }
-};
+}
 
 /*
 =========================================
@@ -667,17 +726,60 @@ const estimatedFrequencyControl = generalFolder
     )} Hz`;
   });
 
+// TODO, see if you can shorten this a bit
 // Magnetic field
 // Sprite toggle
-generalFolder
-  .add(config, "showSingle")
-  .name("Mag Field")
-  .onChange((value) => {
-    sprites.forEach((sprite) => {
-      sprite.visible = value;
-    });
-  });
+// Add a slider to control the number of visible sprites
+const magFieldControl = { "Mag Field": 0 }; // Initialize with the minimum value
+generalFolder.add(magFieldControl, "Mag Field", 0, 3).step(1).onChange(updateVisibleSprites);
 
+// Define the sprite and positional indices for each slider value
+const spriteIndices = [
+  [],                // Indices for slider value 0 (empty array for no sprites)
+  [0, 3, 6, 9, 12, 15], // Indices for slider value 1
+  [0, 3, 6, 9, 12, 15, 1, 4, 7, 10, 13, 16], // Indices for slider value 2
+  [0, 3, 6, 9, 12, 15, 1, 4, 7, 10, 13, 16, 2, 5, 8, 11, 14, 17], // Indices for slider value 3
+];
+
+// Define the sprite positions
+const spritePositions = [
+  [...spriteData[0].positions[0]],
+  [...spriteData[0].positions[1]],
+  [...spriteData[0].positions[2]],
+  [...spriteData[1].positions[0]],
+  [...spriteData[1].positions[1]],
+  [...spriteData[1].positions[2]],
+  [...spriteData[2].positions[0]],
+  [...spriteData[2].positions[1]],
+  [...spriteData[2].positions[2]],
+  [...spriteData[3].positions[0]],
+  [...spriteData[3].positions[1]],
+  [...spriteData[3].positions[2]],
+  [...spriteData[4].positions[0]],
+  [...spriteData[4].positions[1]],
+  [...spriteData[4].positions[2]],
+  [...spriteData[5].positions[0]],
+  [...spriteData[5].positions[1]],
+  [...spriteData[5].positions[2]],
+];
+
+// Function to update the visible sprite based on the slider value
+function updateVisibleSprites() {
+  // Clear visibility for all sprites
+  sprites.forEach(sprite => (sprite.visible = false));
+
+  // Set visibility for the selected sprites
+  const currentSpriteIndices = spriteIndices[Math.floor(magFieldControl["Mag Field"])];
+  currentSpriteIndices.forEach(spriteIndex => {
+    sprites[spriteIndex].visible = true;
+    sprites[spriteIndex].position.set(...spritePositions[spriteIndex]);
+  });
+};
+
+// Initial setup to show the minimum number of sprites
+updateVisibleSprites();
+
+// Magnetic field sum
 generalFolder
   .add(config, "showCumulative")
   .name("Mag Field Sum")
@@ -710,44 +812,44 @@ if (rotorScage) {
 }
 
 // Current parameters
+// Current parameters
+const currentFolder = gui.addFolder("Current");
+
 // Particle color
-const commonColorController = generalFolder
-  .addColor(commonCurrentParam, "color") // Add color control
+const commonColorController = currentFolder
+  .addColor(commonCurrentParam, "color")
   .name("Particle Color");
 
-// Callback function for common color update
 commonColorController.onChange(() => {
-  // Apply the new color to your spriteMaterial
   spriteMaterial.color.set(commonCurrentParam.color);
 });
 
-// Amperage, amount of particles 
-const amperageSlider = generalFolder.add(config, 'amperage', 1, 200).name('Density');
-// Function to update particles when Amperage changes
+// Amperage, density, amount of particles
+const amperageSlider = currentFolder
+  .add(config, "amperage", 1, 300)
+  .name("Density");
+
 function updateParticlesAmperage() {
   pathL1param.particlesPerSegment = config.amperage;
   pathL2param.particlesPerSegment = config.amperage;
   pathL3param.particlesPerSegment = config.amperage;
 
-  // Recreate particles for each path
   createParticles(pathL1particles, pathL1, pathL1param);
   createParticles(pathL2particles, pathL2, pathL2param);
   createParticles(pathL3particles, pathL3, pathL3param);
-};
-// Listen for changes in the Amperage slider and update particles accordingly
-amperageSlider.onChange(updateParticlesAmperage);
-// Initialize particles with default Amperage value
+}
+
+amperageSlider.onFinishChange(updateParticlesAmperage);
 updateParticlesAmperage();
 
-
 // Hide particles
-const L1VisibilityController = generalFolder
+const L1VisibilityController = currentFolder
   .add(pathL1param, "hideParticles")
   .name("Hide L1");
-const L2VisibilityController = generalFolder
+const L2VisibilityController = currentFolder
   .add(pathL2param, "hideParticles")
   .name("Hide L2");
-const L3VisibilityController = generalFolder
+const L3VisibilityController = currentFolder
   .add(pathL3param, "hideParticles")
   .name("Hide L3");
 
@@ -764,8 +866,7 @@ L3VisibilityController.onChange(() => {
 });
 
 // Sine amplitude
-// How far the particle will travel sinussoidally
-const sineAmplitudeController = generalFolder
+const sineAmplitudeController = currentFolder
   .add({ sineAmplitude: sineAmplitude }, "sineAmplitude", 0.001, 0.01)
   .name("Amplitude")
   .onChange(updateSineAmplitude);
@@ -775,25 +876,24 @@ function updateSineAmplitude(value) {
 }
 
 // Particle scale
-const commonScaleController = generalFolder
+const commonScaleController = currentFolder
   .add(commonCurrentParam, "scale", 0.002, 0.015)
   .name("Particle Scale");
-// onChange lagging
+
 commonScaleController.onFinishChange(() => {
-  // Update particles for each array when the scale is changed
   createParticles(pathL1particles, pathL1, pathL1param);
   createParticles(pathL2particles, pathL2, pathL3param);
   createParticles(pathL3particles, pathL3, pathL3param);
 });
 
 // Opacity controls
-const commonOpacityController = generalFolder
+const commonOpacityController = currentFolder
   .add(commonCurrentParam, "opacity", 0, 1)
   .name("Particle Opacity");
 
 commonOpacityController.onChange(updateParticleMaterial);
 
-// This one lets you adjust the particle transparency 
+// This one lets you adjust the particle transparency
 // It is a bit buggy when you toggle transparency
 // The alpha channel doesnt apply correctly from time
 // The particle material also goes white for some reason
@@ -871,7 +971,7 @@ for (const modelName in defaultOpacities) {
         .name(`${displayName} Opacity`);
     }
   }
-};
+}
 
 // Set default visibility values and add controllers to dat gui
 for (const modelName in defaultVisibility) {
@@ -886,7 +986,7 @@ for (const modelName in defaultVisibility) {
       });
     model.visible = defaultVisibility[modelName];
   }
-};
+}
 
 // Hide bearings
 // Note: this will hide everything containing the word bearing
@@ -909,9 +1009,11 @@ function toggleBearingModels() {
 }
 
 // Add a boolean control to the visibility folder with a custom name
-const bearingVisibilityControl = visibilityFolder.add({ 'Bearing Visibility': bearingModelsVisible }, 'Bearing Visibility');
+const bearingVisibilityControl = visibilityFolder.add(
+  { "Bearing Visibility": bearingModelsVisible },
+  "Bearing Visibility"
+);
 bearingVisibilityControl.onChange(toggleBearingModels); // Call toggleBearingModels when the checkbox changes
-
 
 /*
 =========================================
@@ -950,19 +1052,34 @@ const animate = function () {
 
   // Magnetic field sprites
   // Enable/disabled via dat gui
-  if (config.showSingle) {
-    animateAlternatingSprites(sprites[0], spriteScale, pathL1param.phaseL1, t);
-    animateAlternatingSprites(sprites[1], spriteScale, pathL1param.phaseL1, t);
-    animateAlternatingSprites(sprites[2], spriteScale, pathL2param.phaseL2, t);
-    animateAlternatingSprites(sprites[3], spriteScale, pathL2param.phaseL2, t);
-    animateAlternatingSprites(sprites[4], spriteScale, pathL3param.phaseL3, t);
-    animateAlternatingSprites(sprites[5], spriteScale, pathL3param.phaseL3, t);
-  }
+
+  animateAlternatingSprites(sprites[0], spriteScale, pathL1param.phaseL1, t);
+  animateAlternatingSprites(sprites[1], spriteScale, pathL1param.phaseL1, t);
+  animateAlternatingSprites(sprites[2], spriteScale, pathL1param.phaseL1, t);
+
+  animateAlternatingSprites(sprites[3], spriteScale, pathL1param.phaseL1, t);
+  animateAlternatingSprites(sprites[4], spriteScale, pathL1param.phaseL1, t);
+  animateAlternatingSprites(sprites[5], spriteScale, pathL1param.phaseL1, t);
+
+  animateAlternatingSprites(sprites[6], spriteScale, pathL2param.phaseL2, t);
+  animateAlternatingSprites(sprites[7], spriteScale, pathL2param.phaseL2, t);
+  animateAlternatingSprites(sprites[8], spriteScale, pathL2param.phaseL2, t);
+
+  animateAlternatingSprites(sprites[9], spriteScale, pathL2param.phaseL2, t);
+  animateAlternatingSprites(sprites[10], spriteScale, pathL2param.phaseL2, t);
+  animateAlternatingSprites(sprites[11], spriteScale, pathL2param.phaseL2, t);
+
+  animateAlternatingSprites(sprites[12], spriteScale, pathL3param.phaseL3, t);
+  animateAlternatingSprites(sprites[13], spriteScale, pathL3param.phaseL3, t);
+  animateAlternatingSprites(sprites[14], spriteScale, pathL3param.phaseL3, t);
+
+  animateAlternatingSprites(sprites[15], spriteScale, pathL3param.phaseL3, t);
+  animateAlternatingSprites(sprites[16], spriteScale, pathL3param.phaseL3, t);
+  animateAlternatingSprites(sprites[17], spriteScale, pathL3param.phaseL3, t);
 
   if (config.showCumulative) {
     animateIndependentSprites(t);
   }
-
 
   // Animate current particles
   animateParticles(
@@ -1014,7 +1131,7 @@ const animate = function () {
   } else {
     // Increment the number of frames
     numberOfFrames++;
-  };
+  }
 
   // Use request animation frame for performance
   requestAnimationFrame(animate);

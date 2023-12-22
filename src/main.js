@@ -134,6 +134,7 @@ async function main() {
     // Function to create sprites
     const createSprite = (material, position) => {
       const sprite = new THREE.Sprite(material.clone());
+      sprite.renderOrder = 1;
       sprite.position.set(...position);
       return sprite;
     };
@@ -142,16 +143,71 @@ async function main() {
     // Each sprite must be assigned its own texture and color
     // Create an instance of each sprite with its own material properties
     // If that is not done, the sprites do not work correctly
-    const sprites = [
-      createSprite(createMaterial(textureSouth, "#e74c3c"), [0, 0.22, 0.3]),
-      createSprite(createMaterial(textureNorth, "#3498db"), [0, -0.22, 0.3]),
+    const createSpriteArray = (texture, color, positions) =>
+      positions.map((position) =>
+        createSprite(createMaterial(texture, color), position)
+      );
 
-      createSprite(createMaterial(textureSouth, "#e74c3c"), [0.2, 0.12, 0.3]),
-      createSprite(createMaterial(textureNorth, "#3498db"), [-0.2, -0.12, 0.3]),
-
-      createSprite(createMaterial(textureSouth, "#e74c3c"), [0.2, -0.12, 0.3]),
-      createSprite(createMaterial(textureNorth, "#3498db"), [-0.2, 0.12, 0.3]),
+    const spriteData = [
+      {
+        texture: textureSouth,
+        color: "#e74c3c",
+        positions: [
+          [0, 0.22, 0.3],
+          [0, 0.22, 0.1],
+          [0, 0.22, -0.1],
+        ],
+      },
+      {
+        texture: textureNorth,
+        color: "#3498db",
+        positions: [
+          [0, -0.22, 0.3],
+          [0, -0.22, 0.1],
+          [0, -0.22, -0.1],
+        ],
+      },
+      {
+        texture: textureSouth,
+        color: "#e74c3c",
+        positions: [
+          [0.2, 0.12, 0.3],
+          [0.2, 0.12, 0.1],
+          [0.2, 0.12, -0.1],
+        ],
+      },
+      {
+        texture: textureNorth,
+        color: "#3498db",
+        positions: [
+          [-0.2, -0.12, 0.3],
+          [-0.2, -0.12, 0.1],
+          [-0.2, -0.12, -0.1],
+        ],
+      },
+      {
+        texture: textureSouth,
+        color: "#e74c3c",
+        positions: [
+          [0.2, -0.12, 0.3],
+          [0.2, -0.12, 0.1],
+          [0.2, -0.12, -0.1],
+        ],
+      },
+      {
+        texture: textureNorth,
+        color: "#3498db",
+        positions: [
+          [-0.2, 0.12, 0.3],
+          [-0.2, 0.12, 0.1],
+          [-0.2, 0.12, -0.1],
+        ],
+      },
     ];
+
+    const sprites = spriteData.flatMap(({ texture, color, positions }) =>
+      createSpriteArray(texture, color, positions)
+    );
 
     sprites.forEach((sprite) => {
       scene.add(sprite);
@@ -193,6 +249,13 @@ async function main() {
         sprite.userData.textureChanged = false;
       }
     }
+
+    const animateSprites = (param, phase, index) => {
+      const offset = index * 6;
+      for (let i = 0; i < 6; i++) {
+        animateAlternatingSprites(sprites[offset + i], spriteScale, phase, t);
+      }
+    };
 
     // Stator winding magnetic field polarity sum
     // Create two independent sprites
@@ -642,7 +705,7 @@ async function main() {
       estimatedFrequency: 0.3, // Starting frequency estimation
       showSingle: false, // Magnetic field
       showCumulative: false, // Magnetic field
-      amperage: 100, // Particle amount
+      amperage: 100,
     };
 
     // Add configurable parameters
@@ -659,17 +722,64 @@ async function main() {
         )} Hz`;
       });
 
+    // TODO, see if you can shorten this a bit
     // Magnetic field
     // Sprite toggle
+    // Add a slider to control the number of visible sprites
+    const magFieldControl = { "Mag Field": 0 }; // Initialize with the minimum value
     generalFolder
-      .add(config, "showSingle")
-      .name("Mag Field")
-      .onChange((value) => {
-        sprites.forEach((sprite) => {
-          sprite.visible = value;
-        });
-      });
+      .add(magFieldControl, "Mag Field", 0, 3)
+      .step(1)
+      .onChange(updateVisibleSprites);
 
+    // Define the sprite and positional indices for each slider value
+    const spriteIndices = [
+      [], // Indices for slider value 0 (empty array for no sprites)
+      [0, 3, 6, 9, 12, 15], // Indices for slider value 1
+      [0, 3, 6, 9, 12, 15, 1, 4, 7, 10, 13, 16], // Indices for slider value 2
+      [0, 3, 6, 9, 12, 15, 1, 4, 7, 10, 13, 16, 2, 5, 8, 11, 14, 17], // Indices for slider value 3
+    ];
+
+    // Define the sprite positions
+    const spritePositions = [
+      [...spriteData[0].positions[0]],
+      [...spriteData[0].positions[1]],
+      [...spriteData[0].positions[2]],
+      [...spriteData[1].positions[0]],
+      [...spriteData[1].positions[1]],
+      [...spriteData[1].positions[2]],
+      [...spriteData[2].positions[0]],
+      [...spriteData[2].positions[1]],
+      [...spriteData[2].positions[2]],
+      [...spriteData[3].positions[0]],
+      [...spriteData[3].positions[1]],
+      [...spriteData[3].positions[2]],
+      [...spriteData[4].positions[0]],
+      [...spriteData[4].positions[1]],
+      [...spriteData[4].positions[2]],
+      [...spriteData[5].positions[0]],
+      [...spriteData[5].positions[1]],
+      [...spriteData[5].positions[2]],
+    ];
+
+    // Function to update the visible sprite based on the slider value
+    function updateVisibleSprites() {
+      // Clear visibility for all sprites
+      sprites.forEach((sprite) => (sprite.visible = false));
+
+      // Set visibility for the selected sprites
+      const currentSpriteIndices =
+        spriteIndices[Math.floor(magFieldControl["Mag Field"])];
+      currentSpriteIndices.forEach((spriteIndex) => {
+        sprites[spriteIndex].visible = true;
+        sprites[spriteIndex].position.set(...spritePositions[spriteIndex]);
+      });
+    }
+
+    // Initial setup to show the minimum number of sprites
+    updateVisibleSprites();
+
+    // Magnetic field sum
     generalFolder
       .add(config, "showCumulative")
       .name("Mag Field Sum")
@@ -702,45 +812,44 @@ async function main() {
     }
 
     // Current parameters
+    // Current parameters
+    const currentFolder = gui.addFolder("Current");
+
     // Particle color
-    const commonColorController = generalFolder
-      .addColor(commonCurrentParam, "color") // Add color control
+    const commonColorController = currentFolder
+      .addColor(commonCurrentParam, "color")
       .name("Particle Color");
 
-    // Callback function for common color update
     commonColorController.onChange(() => {
-      // Apply the new color to your spriteMaterial
       spriteMaterial.color.set(commonCurrentParam.color);
     });
 
     // Amperage, density, amount of particles
-    const amperageSlider = generalFolder
-      .add(config, "amperage", 1, 200)
+    const amperageSlider = currentFolder
+      .add(config, "amperage", 1, 300)
       .name("Density");
-    // Function to update particles when Amperage changes
+
     function updateParticlesAmperage() {
       pathL1param.particlesPerSegment = config.amperage;
       pathL2param.particlesPerSegment = config.amperage;
       pathL3param.particlesPerSegment = config.amperage;
 
-      // Recreate particles for each path
       createParticles(pathL1particles, pathL1, pathL1param);
       createParticles(pathL2particles, pathL2, pathL2param);
       createParticles(pathL3particles, pathL3, pathL3param);
     }
-    // Listen for changes in the Amperage slider and update particles accordingly
-    amperageSlider.onChange(updateParticlesAmperage);
-    // Initialize particles with default Amperage value
+
+    amperageSlider.onFinishChange(updateParticlesAmperage);
     updateParticlesAmperage();
 
     // Hide particles
-    const L1VisibilityController = generalFolder
+    const L1VisibilityController = currentFolder
       .add(pathL1param, "hideParticles")
       .name("Hide L1");
-    const L2VisibilityController = generalFolder
+    const L2VisibilityController = currentFolder
       .add(pathL2param, "hideParticles")
       .name("Hide L2");
-    const L3VisibilityController = generalFolder
+    const L3VisibilityController = currentFolder
       .add(pathL3param, "hideParticles")
       .name("Hide L3");
 
@@ -757,8 +866,7 @@ async function main() {
     });
 
     // Sine amplitude
-    // How far the particle will travel sinussoidally
-    const sineAmplitudeController = generalFolder
+    const sineAmplitudeController = currentFolder
       .add({ sineAmplitude: sineAmplitude }, "sineAmplitude", 0.001, 0.01)
       .name("Amplitude")
       .onChange(updateSineAmplitude);
@@ -768,19 +876,18 @@ async function main() {
     }
 
     // Particle scale
-    const commonScaleController = generalFolder
+    const commonScaleController = currentFolder
       .add(commonCurrentParam, "scale", 0.002, 0.015)
       .name("Particle Scale");
-    // onChange lagging
+
     commonScaleController.onFinishChange(() => {
-      // Update particles for each array when the scale is changed
       createParticles(pathL1particles, pathL1, pathL1param);
       createParticles(pathL2particles, pathL2, pathL3param);
       createParticles(pathL3particles, pathL3, pathL3param);
     });
 
     // Opacity controls
-    const commonOpacityController = generalFolder
+    const commonOpacityController = currentFolder
       .add(commonCurrentParam, "opacity", 0, 1)
       .name("Particle Opacity");
 
@@ -945,44 +1052,120 @@ function updateTransparency(value) {
 
       // Magnetic field sprites
       // Enable/disabled via dat gui
-      if (config.showSingle) {
-        animateAlternatingSprites(
-          sprites[0],
-          spriteScale,
-          pathL1param.phaseL1,
-          t
-        );
-        animateAlternatingSprites(
-          sprites[1],
-          spriteScale,
-          pathL1param.phaseL1,
-          t
-        );
-        animateAlternatingSprites(
-          sprites[2],
-          spriteScale,
-          pathL2param.phaseL2,
-          t
-        );
-        animateAlternatingSprites(
-          sprites[3],
-          spriteScale,
-          pathL2param.phaseL2,
-          t
-        );
-        animateAlternatingSprites(
-          sprites[4],
-          spriteScale,
-          pathL3param.phaseL3,
-          t
-        );
-        animateAlternatingSprites(
-          sprites[5],
-          spriteScale,
-          pathL3param.phaseL3,
-          t
-        );
-      }
+
+      animateAlternatingSprites(
+        sprites[0],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[1],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[2],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+
+      animateAlternatingSprites(
+        sprites[3],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[4],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[5],
+        spriteScale,
+        pathL1param.phaseL1,
+        t
+      );
+
+      animateAlternatingSprites(
+        sprites[6],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[7],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[8],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+
+      animateAlternatingSprites(
+        sprites[9],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[10],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[11],
+        spriteScale,
+        pathL2param.phaseL2,
+        t
+      );
+
+      animateAlternatingSprites(
+        sprites[12],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[13],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[14],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
+
+      animateAlternatingSprites(
+        sprites[15],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[16],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
+      animateAlternatingSprites(
+        sprites[17],
+        spriteScale,
+        pathL3param.phaseL3,
+        t
+      );
 
       if (config.showCumulative) {
         animateIndependentSprites(t);
@@ -1046,9 +1229,6 @@ function updateTransparency(value) {
 
     // Call animate
     animate();
-
-    // Continue with additional logic here
-    // ...
   } catch (error) {
     console.error("Error loading the model:", error);
   }

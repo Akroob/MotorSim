@@ -47,7 +47,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; // Animation loop is required when either damping or auto-rotation are enabled
 controls.dampingFactor = 0.1;
 controls.screenSpacePanning = false;
-controls.maxPolarAngle = Math.PI / 2;
+controls.maxPolarAngle = Math.PI / 1.7;
 //controls.minDistance = 0.3;
 controls.maxDistance = 3;
 
@@ -112,7 +112,175 @@ try {
 
 /*
 =========================================
-3: Magnetic field setup
+3: Model child visibility
+=========================================
+*/
+
+// Assign variables to model children
+// Create an object to store the GLTF model children
+const modelChildren = {};
+// Iterate through the children and assign them to the object based on their names
+motorModel.children.forEach((child) => {
+  modelChildren[child.name] = child;
+});
+
+// Interactable children of motorModel
+// Children for rotating
+const rotorShaft = modelChildren["rotorShaft"];
+const rotorScage = modelChildren["rotorScage"]; // Opacity aswell
+rotorScage.renderOrder = -1;
+const bearingBackInner = modelChildren["bearingBackInner"];
+const bearingFrontInner = modelChildren["bearingFrontInner"];
+const bearingBallsFrontParent = modelChildren["bearingBallsFrontParent"];
+const bearingBallsBackParent = modelChildren["bearingBallsBackParent"];
+const fan = modelChildren["fan"]; // Opacity aswell
+
+const bearingBallsFrontNames = [
+  "bearingBallsFront",
+  "bearingBallsFront001",
+  "bearingBallsFront002",
+  "bearingBallsFront003",
+  "bearingBallsFront004",
+  "bearingBallsFront005",
+  "bearingBallsFront006",
+  "bearingBallsFront007",
+  "bearingBallsFront008",
+  "bearingBallsFront009",
+  "bearingBallsFront010",
+  "bearingBallsFront011",
+];
+
+// Create an object to store the bearing ball references for the front
+const bearingBallsFront = {};
+
+// Loop through the names and create references
+for (const name of bearingBallsFrontNames) {
+  bearingBallsFront[name] = modelChildren[name];
+  if (bearingBallsFront[name]) {
+    bearingBallsFront[name].parent = bearingBallsFrontParent; // Parent to middle model
+  }
+}
+
+const bearingBallsBackNames = [
+  "bearingBallsBack",
+  "bearingBallsBack001",
+  "bearingBallsBack002",
+  "bearingBallsBack003",
+  "bearingBallsBack004",
+  "bearingBallsBack005",
+  "bearingBallsBack006",
+  "bearingBallsBack007",
+  "bearingBallsBack008",
+  "bearingBallsBack009",
+  "bearingBallsBack010",
+  "bearingBallsBack011",
+];
+
+// Create an object to store the bearing ball references for the back
+const bearingBallsBack = {};
+
+// Loop through the names and create references
+for (const name of bearingBallsBackNames) {
+  bearingBallsBack[name] = modelChildren[name];
+  if (bearingBallsBack[name]) {
+    bearingBallsBack[name].parent = bearingBallsBackParent; // Parent to middle model
+  }
+}
+
+// Rotational functions
+// Animate bearing rotations
+function rotateComponent(component, rotationAngle) {
+  if (component) {
+    component.rotation.set(0, 0, rotationAngle);
+  }
+}
+
+function rotateBearingBalls(bearingBalls, rotationAngle) {
+  for (const name in bearingBalls) {
+    const bearingBall = bearingBalls[name];
+    if (bearingBall) {
+      bearingBall.rotation.set(0, 0, rotationAngle);
+    }
+  }
+}
+
+// Children for hiding
+// Cover for the connection box
+const housingCover = modelChildren["housingCover"];
+if (housingCover) {
+  housingCover.visible = false; // Hide housingCover
+}
+
+// Children for opacity/hiding (fan and rotor squirrelcage already defined)
+const corpusMid = modelChildren["corpusMid"];
+const corpusFront = modelChildren["corpusFront"];
+const corpusBack = modelChildren["corpusBack"];
+const cablesInner = modelChildren["cablesInner"];
+const stator = modelChildren["stator"];
+const bearingFront = modelChildren["bearingFront"];
+const bearingBack = modelChildren["bearingBack"];
+
+// Starting default opacity values for dat gui
+// Adjust whatever you think should be using opacity
+// Define default opacity values
+const defaultOpacities = {
+  //corpusMid: 0.5,
+  //corpusFront: 0.01,
+  //corpusBack: 0.5,
+  stator: 1,
+  rotorScage: 1,
+  //rotorShaft: 1,
+  cablesInner: 1,
+  //fan: 1,
+};
+
+// Default visibility values for dat gui
+const defaultVisibility = {
+  corpusFront: false, // Hidden by default
+  corpusMid: true,
+  corpusBack: true,
+  //cablesInner: true,
+  //rotorScage: true,
+  rotorShaft: true,
+  fan: true,
+};
+
+// Model names in dat gui
+const displayNames = {
+  corpusMid: "Frame",
+  corpusFront: "End Bell",
+  corpusBack: "Fan Cover",
+  cablesInner: "Conductor",
+  rotorScage: "Rotor",
+  fan: "Fan",
+  stator: "Stator",
+  rotorShaft: "Shaft",
+};
+
+// Set default opacity values
+for (const modelName in defaultOpacities) {
+  const model = modelChildren[modelName];
+  if (model) {
+    if (model.children.length > 0) {
+      // Model with children
+      model.userData.originalOpacity = defaultOpacities[modelName];
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.material.transparent = true;
+          child.material.opacity = defaultOpacities[modelName];
+        }
+      });
+    } else if (model.isMesh) {
+      // Model without children
+      model.material.transparent = true;
+      model.material.opacity = defaultOpacities[modelName];
+    }
+  }
+}
+
+/*
+=========================================
+4: Magnetic field setup
 =========================================
 */
 
@@ -258,13 +426,6 @@ function animateAlternatingSprites(sprite, initialScale, phaseShift, time) {
   }
 }
 
-const animateSprites = (param, phase, index) => {
-  const offset = index * 6;
-  for (let i = 0; i < 6; i++) {
-    animateAlternatingSprites(sprites[offset + i], spriteScale, phase, t);
-  }
-};
-
 // Stator winding magnetic field polarity sum
 // Create two independent sprites
 const independentSprite1 = createSprite(
@@ -314,7 +475,7 @@ independentSprite2.visible = false;
 
 /*
 =========================================
-3: Electrical current setup
+5: Electrical current setup
 =========================================
 */
 
@@ -346,7 +507,7 @@ const lengthpathL2 = pathL2.getLength();
 const lengthpathL3 = pathL3.getLength();
 
 const desiredDensity = 0.1; // You can adjust this value (e.g., 0.1 means 10% of the curve length per segment)
-const densityFactor = 20; // You can adjust this value based on your needs
+const densityFactor = 50; // You can adjust this value based on your needs
 // Calculate adjusted density
 const adjustedDensity = desiredDensity * densityFactor;
 
@@ -523,176 +684,49 @@ const animateParticles = (
   });
 };
 
-/*
-=========================================
-5: Model child visibility
-=========================================
-*/
-
-// Assign variables to model children
-// Create an object to store the GLTF model children
-const modelChildren = {};
-// Iterate through the children and assign them to the object based on their names
-motorModel.children.forEach((child) => {
-  modelChildren[child.name] = child;
-});
-
-// Interactable children of motorModel
-// Children for rotating
-const rotorShaft = modelChildren["rotorShaft"];
-const rotorScage = modelChildren["rotorScage"]; // Opacity aswell
-const bearingBackInner = modelChildren["bearingBackInner"];
-const bearingFrontInner = modelChildren["bearingFrontInner"];
-const bearingBallsFrontParent = modelChildren["bearingBallsFrontParent"];
-const bearingBallsBackParent = modelChildren["bearingBallsBackParent"];
-const fan = modelChildren["fan"]; // Opacity aswell
-
-const bearingBallsFrontNames = [
-  "bearingBallsFront",
-  "bearingBallsFront001",
-  "bearingBallsFront002",
-  "bearingBallsFront003",
-  "bearingBallsFront004",
-  "bearingBallsFront005",
-  "bearingBallsFront006",
-  "bearingBallsFront007",
-  "bearingBallsFront008",
-  "bearingBallsFront009",
-  "bearingBallsFront010",
-  "bearingBallsFront011",
+// Current directional arrows
+const arrows = [
+  modelChildren["arrow1"],
+  modelChildren["arrow2"],
+  modelChildren["arrow3"],
+  modelChildren["arrow4"],
+  modelChildren["arrow5"],
+  modelChildren["arrow6"],
+  modelChildren["arrow7"],
+  modelChildren["arrow8"],
+  modelChildren["arrow9"],
+  modelChildren["arrow10"],
+  modelChildren["arrow11"],
+  modelChildren["arrow12"],
 ];
 
-// Create an object to store the bearing ball references for the front
-const bearingBallsFront = {};
-
-// Loop through the names and create references
-for (const name of bearingBallsFrontNames) {
-  bearingBallsFront[name] = modelChildren[name];
-  if (bearingBallsFront[name]) {
-    bearingBallsFront[name].parent = bearingBallsFrontParent; // Parent to middle model
-  }
-}
-
-const bearingBallsBackNames = [
-  "bearingBallsBack",
-  "bearingBallsBack001",
-  "bearingBallsBack002",
-  "bearingBallsBack003",
-  "bearingBallsBack004",
-  "bearingBallsBack005",
-  "bearingBallsBack006",
-  "bearingBallsBack007",
-  "bearingBallsBack008",
-  "bearingBallsBack009",
-  "bearingBallsBack010",
-  "bearingBallsBack011",
+// Set individual phase shifts for each arrow
+const phaseShifts = [
+  pathL1param.phaseL1,
+  pathL1param.phaseL1,
+  pathL2param.phaseL2,
+  pathL2param.phaseL2,
+  pathL3param.phaseL3,
+  pathL3param.phaseL3,
+  pathL1param.phaseL1,
+  pathL1param.phaseL1,
+  pathL2param.phaseL2,
+  pathL2param.phaseL2,
+  pathL3param.phaseL3,
+  pathL3param.phaseL3,
 ];
 
-// Create an object to store the bearing ball references for the back
-const bearingBallsBack = {};
-
-// Loop through the names and create references
-for (const name of bearingBallsBackNames) {
-  bearingBallsBack[name] = modelChildren[name];
-  if (bearingBallsBack[name]) {
-    bearingBallsBack[name].parent = bearingBallsBackParent; // Parent to middle model
-  }
-}
-
-// Rotational functions
-// Animate bearing rotations
-function rotateComponent(component, rotationAngle) {
-  if (component) {
-    component.rotation.set(0, 0, rotationAngle);
-  }
-}
-
-function rotateBearingBalls(bearingBalls, rotationAngle) {
-  for (const name in bearingBalls) {
-    const bearingBall = bearingBalls[name];
-    if (bearingBall) {
-      bearingBall.rotation.set(0, 0, rotationAngle);
-    }
-  }
-}
-
-// Children for hiding
-// Cover for the connection box
-const housingCover = modelChildren["housingCover"];
-if (housingCover) {
-  housingCover.visible = false; // Hide housingCover
-}
-
-// Children for opacity/hiding (fan and rotor squirrelcage already defined)
-const corpusMid = modelChildren["corpusMid"];
-const corpusFront = modelChildren["corpusFront"];
-const corpusBack = modelChildren["corpusBack"];
-const cablesInner = modelChildren["cablesInner"];
-const stator = modelChildren["stator"];
-const bearingFront = modelChildren["bearingFront"];
-const bearingBack = modelChildren["bearingBack"];
-
-// Starting default opacity values for dat gui
-// Adjust whatever you think should be using opacity
-// Define default opacity values
-const defaultOpacities = {
-  //corpusMid: 0.5,
-  //corpusFront: 0.01,
-  //corpusBack: 0.5,
-  stator: 1,
-  rotorScage: 1,
-  //rotorShaft: 1,
-  cablesInner: 1,
-  //fan: 1,
-};
-
-// Default visibility values for dat gui
-const defaultVisibility = {
-  corpusFront: false, // Hidden by default
-  corpusMid: true,
-  corpusBack: true,
-  //cablesInner: true,
-  //rotorScage: true,
-  rotorShaft: true,
-  fan: true,
-};
-
-// Model names in dat gui
-const displayNames = {
-  corpusMid: "Middle",
-  corpusFront: "Front",
-  corpusBack: "Back",
-  cablesInner: "Conduct",
-  rotorScage: "Rotor",
-  fan: "Fan",
-  stator: "Stator",
-  rotorShaft: "Shaft",
-};
-
-// Set default opacity values
-for (const modelName in defaultOpacities) {
-  const model = modelChildren[modelName];
-  if (model) {
-    if (model.children.length > 0) {
-      // Model with children
-      model.userData.originalOpacity = defaultOpacities[modelName];
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.material.transparent = true;
-          child.material.opacity = defaultOpacities[modelName];
-        }
-      });
-    } else if (model.isMesh) {
-      // Model without children
-      model.material.transparent = true;
-      model.material.opacity = defaultOpacities[modelName];
-    }
-  }
+// Combined function to calculate sine value and update arrow
+function updateArrow(arrow, t, phaseShift) {
+  const sineValue = Math.sin(2 * Math.PI * (t + phaseShift));
+  arrow.visible = hidingState["Direction"] ? sineValue !== 0 : !sineValue;
+  arrow.scale.set(1, 1, -sineValue);
+  arrow.updateMatrix();
 }
 
 /*
 =========================================
-5: Dat gui setup
+6: Dat gui setup
 =========================================
 */
 
@@ -713,7 +747,7 @@ const config = {
 };
 
 // Add configurable parameters
-generalFolder.add(config, "speed", 0, 0.05).name("Speed");
+generalFolder.add(config, "speed", 0, 0.02).name("Speed");
 
 // Frequency counter, by timing how long one completion in animation takes
 const estimatedFrequencyControl = generalFolder
@@ -816,7 +850,6 @@ if (rotorScage) {
 }
 
 // Current parameters
-// Current parameters
 const currentFolder = gui.addFolder("Current");
 
 // Particle color
@@ -827,6 +860,14 @@ const commonColorController = currentFolder
 commonColorController.onChange(() => {
   spriteMaterial.color.set(commonCurrentParam.color);
 });
+
+// Object to hold hiding state for all arrows
+const hidingState = {
+  Direction: false,
+};
+
+// Add a checkbox to toggle hiding of all arrows
+currentFolder.add(hidingState, "Direction").name("Direction");
 
 // Amperage, density, amount of particles
 const amperageSlider = currentFolder
@@ -1021,13 +1062,51 @@ bearingVisibilityControl.onChange(toggleBearingModels); // Call toggleBearingMod
 
 /*
 =========================================
-6: Animation
+7: Animation
 =========================================
 */
 
 // Constants for frequency counting
 let numberOfFrames = 0;
 let startTime = null; // Initialize startTime variable
+
+/*
+// Shader testing
+
+// Create a plane geometry
+var geometry = new THREE.PlaneGeometry(2, 2);
+
+// Define a custom shader material
+var material = new THREE.ShaderMaterial({
+  transparent: true,
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    varying vec2 vUv;
+    void main() {
+      vec3 color = vec3(1.0); // White color
+      // Draw two white lines
+      if (vUv.y < 0.05 || vUv.y > 0.95) {
+        gl_FragColor = vec4(color, 1.0);
+      } else {
+        discard;
+      }
+    }
+  `
+});
+
+// Create a mesh with the geometry and material
+var plane = new THREE.Mesh(geometry, material);
+
+// Add the plane to the scene
+scene.add(plane);
+
+*/
 
 // Animate function, never ending
 const animate = function () {
@@ -1112,6 +1191,11 @@ const animate = function () {
     phaseL3,
     sineAmplitude
   );
+
+  // Update arrows with phase shifts and hiding state
+  arrows.forEach((arrow, index) => {
+    updateArrow(arrow, t, phaseShifts[index]);
+  });
 
   // Camera controls damping
   controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true

@@ -9,15 +9,6 @@
     "three": "^0.159.0"
   },
   "devDependencies": {
-    "@babel/plugin-syntax-top-level-await": "^7.14.5",
     "vite": "^5.0.10"
-  },
-  "babel": {
-    "presets": [
-      "@babel/preset-env"
-    ],
-    "plugins": [
-      "@babel/plugin-syntax-top-level-await"
-    ]
   }
 }

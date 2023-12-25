@@ -159,7 +159,7 @@ for (const name of bearingBallsFrontNames) {
   if (bearingBallsFront[name]) {
     bearingBallsFront[name].parent = bearingBallsFrontParent; // Parent to middle model
   }
-}
+};
 
 const bearingBallsBackNames = [
   "bearingBallsBack",
@@ -185,7 +185,8 @@ for (const name of bearingBallsBackNames) {
   if (bearingBallsBack[name]) {
     bearingBallsBack[name].parent = bearingBallsBackParent; // Parent to middle model
   }
-}
+};
+
 
 // Rotational functions
 // Animate bearing rotations
@@ -193,7 +194,7 @@ function rotateComponent(component, rotationAngle) {
   if (component) {
     component.rotation.set(0, 0, rotationAngle);
   }
-}
+};
 
 function rotateBearingBalls(bearingBalls, rotationAngle) {
   for (const name in bearingBalls) {
@@ -202,14 +203,14 @@ function rotateBearingBalls(bearingBalls, rotationAngle) {
       bearingBall.rotation.set(0, 0, rotationAngle);
     }
   }
-}
+};
 
 // Children for hiding
 // Cover for the connection box
 const housingCover = modelChildren["housingCover"];
 if (housingCover) {
   housingCover.visible = false; // Hide housingCover
-}
+};
 
 // Children for opacity/hiding (fan and rotor squirrelcage already defined)
 const corpusMid = modelChildren["corpusMid"];
@@ -217,8 +218,8 @@ const corpusFront = modelChildren["corpusFront"];
 const corpusBack = modelChildren["corpusBack"];
 const cablesInner = modelChildren["cablesInner"];
 const stator = modelChildren["stator"];
-const bearingFront = modelChildren["bearingFront"];
-const bearingBack = modelChildren["bearingBack"];
+const cablesInput = modelChildren["cablesInput"];
+
 
 // Starting default opacity values for dat gui
 // Adjust whatever you think should be using opacity
@@ -231,6 +232,7 @@ const defaultOpacities = {
   rotorScage: 1,
   //rotorShaft: 1,
   cablesInner: 1,
+  cablesInput: 1,
   //fan: 1,
 };
 
@@ -250,7 +252,8 @@ const displayNames = {
   corpusMid: "Frame",
   corpusFront: "End Bell",
   corpusBack: "Fan Cover",
-  cablesInner: "Conductor",
+  cablesInner: "Wire",
+  cablesInput: "Input",
   rotorScage: "Rotor",
   fan: "Fan",
   stator: "Stator",
@@ -276,7 +279,7 @@ for (const modelName in defaultOpacities) {
       model.material.opacity = defaultOpacities[modelName];
     }
   }
-}
+};
 
 /*
 =========================================
@@ -764,9 +767,9 @@ const estimatedFrequencyControl = generalFolder
 // Magnetic field
 // Sprite toggle
 // Add a slider to control the number of visible sprites
-const magFieldControl = { "Mag Field": 0 }; // Initialize with the minimum value
+const magFieldControl = { "Mag Polarity": 0 }; // Initialize with the minimum value
 generalFolder
-  .add(magFieldControl, "Mag Field", 0, 3)
+  .add(magFieldControl, "Mag Polarity", 0, 3)
   .step(1)
   .onChange(updateVisibleSprites);
 
@@ -807,7 +810,7 @@ function updateVisibleSprites() {
 
   // Set visibility for the selected sprites
   const currentSpriteIndices =
-    spriteIndices[Math.floor(magFieldControl["Mag Field"])];
+    spriteIndices[Math.floor(magFieldControl["Mag Polarity"])];
   currentSpriteIndices.forEach((spriteIndex) => {
     sprites[spriteIndex].visible = true;
     sprites[spriteIndex].position.set(...spritePositions[spriteIndex]);
@@ -820,7 +823,7 @@ updateVisibleSprites();
 // Magnetic field sum
 generalFolder
   .add(config, "showCumulative")
-  .name("Mag Field Sum")
+  .name("Polarity Sum")
   .onChange((value) => {
     independentSprite1.visible = value;
     independentSprite2.visible = value;
@@ -918,7 +921,7 @@ const sineAmplitudeController = currentFolder
 
 function updateSineAmplitude(value) {
   sineAmplitude = value;
-}
+};
 
 // Particle scale
 const commonScaleController = currentFolder
@@ -938,55 +941,7 @@ const commonOpacityController = currentFolder
 
 commonOpacityController.onChange(updateParticleMaterial);
 
-// This one lets you adjust the particle transparency
-// It is a bit buggy when you toggle transparency
-// The alpha channel doesnt apply correctly from time
-// The particle material also goes white for some reason
-// This disables opacity controls when transparency is off
-
-/*
-const commonTransparencyController = generalFolder
-  .add(commonCurrentParam, "transparency")
-  .name("Transparency");
-commonTransparencyController.onChange(updateParticleMaterial);
-*/
-
-/*
-// Opacity and transparency
-let lastCommonOpacityValue = commonCurrentParam.opacity;
-// Opacity and transparency
-const commonOpacityController = generalFolder
-  .add(commonCurrentParam, "opacity", 0.4, 0.6)
-  .name("Particle Opacity")
-  .onChange(updateParticleMaterial);
-
-const commonTransparencyController = generalFolder
-  .add(commonCurrentParam, "transparency")
-  .name("Transparency")
-  .onChange(updateTransparency);
-
-function updateTransparency(value) {
-  if (!value) {
-    commonOpacityController.domElement.style.pointerEvents = "none";
-    commonOpacityController.domElement.style.filter = "grayscale(100%)";
-    lastCommonOpacityValue = commonCurrentParam.opacity;
-    commonCurrentParam.opacity = 1;
-    commonOpacityController.setValue(1);
-    updateParticleMaterial();
-  } else {
-    commonOpacityController.domElement.style.pointerEvents = "auto";
-    commonOpacityController.domElement.style.filter = ""; // Reset filter
-    if (lastCommonOpacityValue !== 1) {
-      commonCurrentParam.opacity = lastCommonOpacityValue;
-      commonOpacityController.setValue(lastCommonOpacityValue);
-      updateParticleMaterial();
-    }
-  }
-};
-
-*/
-
-// Model visibility, adjust paramters in model child section
+// Model visibility, adjust parameters in model child section
 // Visibility folder
 const visibilityFolder = gui.addFolder("Visibility");
 
@@ -1016,7 +971,7 @@ for (const modelName in defaultOpacities) {
         .name(`${displayName} Opacity`);
     }
   }
-}
+};
 
 // Set default visibility values and add controllers to dat gui
 for (const modelName in defaultVisibility) {
@@ -1031,7 +986,7 @@ for (const modelName in defaultVisibility) {
       });
     model.visible = defaultVisibility[modelName];
   }
-}
+};
 
 // Hide bearings
 // Note: this will hide everything containing the word bearing
@@ -1051,7 +1006,7 @@ function toggleBearingModels() {
       }
     }
   }
-}
+};
 
 // Add a boolean control to the visibility folder with a custom name
 const bearingVisibilityControl = visibilityFolder.add(
@@ -1069,44 +1024,6 @@ bearingVisibilityControl.onChange(toggleBearingModels); // Call toggleBearingMod
 // Constants for frequency counting
 let numberOfFrames = 0;
 let startTime = null; // Initialize startTime variable
-
-/*
-// Shader testing
-
-// Create a plane geometry
-var geometry = new THREE.PlaneGeometry(2, 2);
-
-// Define a custom shader material
-var material = new THREE.ShaderMaterial({
-  transparent: true,
-  vertexShader: `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    varying vec2 vUv;
-    void main() {
-      vec3 color = vec3(1.0); // White color
-      // Draw two white lines
-      if (vUv.y < 0.05 || vUv.y > 0.95) {
-        gl_FragColor = vec4(color, 1.0);
-      } else {
-        discard;
-      }
-    }
-  `
-});
-
-// Create a mesh with the geometry and material
-var plane = new THREE.Mesh(geometry, material);
-
-// Add the plane to the scene
-scene.add(plane);
-
-*/
 
 // Animate function, never ending
 const animate = function () {
@@ -1162,7 +1079,7 @@ const animate = function () {
 
   if (config.showCumulative) {
     animateIndependentSprites(t);
-  }
+  };
 
   // Animate current particles
   animateParticles(
@@ -1219,7 +1136,7 @@ const animate = function () {
   } else {
     // Increment the number of frames
     numberOfFrames++;
-  }
+  };
 
   // Use request animation frame for performance
   requestAnimationFrame(animate);
